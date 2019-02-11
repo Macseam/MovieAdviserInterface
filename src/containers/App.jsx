@@ -49,12 +49,14 @@ class App extends Component {
     }
 
     showAnother() {
+        const NODE_ENV = process.env.NODE_ENV || 'production';
+        const apiUrl = NODE_ENV === 'production' ? 'http://macseam.ru:8080' : 'http://localhost:3000';
         const that = this
         that.setState({
             movies: []
         });
         const startTime = moment()
-        axios.get('http://localhost:3000/')
+        axios.get(apiUrl)
             .then(function (response) {
                 const timeSpent = moment().diff(startTime)
                 message.info(`Время выполнения запроса: ${moment.utc(timeSpent).format('ss:SS')}`);
