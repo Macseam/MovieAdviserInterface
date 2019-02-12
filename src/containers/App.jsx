@@ -5,8 +5,10 @@ import 'antd/dist/antd.css';
 import _ from 'lodash';
 import moment from 'moment';
 import momentDurationFormatSetup from 'moment-duration-format';
-import { Button, Card, Col, message, Rate, Row, Spin, Tag } from "antd";
+import { Button, Card, Col, Icon, message, Rate, Row, Spin, Tag } from "antd";
 
+const NODE_ENV = process.env.NODE_ENV || 'production';
+const apiUrl = NODE_ENV === 'production' ? 'http://macseam.ru:8080' : 'http://localhost:3000';
 const genresDictionary = {
     'Crime': 'Криминальный',
     'Thriller': 'Триллер',
@@ -49,14 +51,12 @@ class App extends Component {
     }
 
     showAnother() {
-        const NODE_ENV = process.env.NODE_ENV || 'production';
-        const apiUrl = NODE_ENV === 'production' ? 'http://macseam.ru:8080' : 'http://localhost:3000';
         const that = this
         that.setState({
             movies: []
         });
         const startTime = moment()
-        axios.get(apiUrl)
+        axios.get(`${apiUrl}/random`)
             .then(function (response) {
                 const timeSpent = moment().diff(startTime)
                 message.info(`Время выполнения запроса: ${moment.utc(timeSpent).format('ss:SS')}`);
@@ -69,6 +69,16 @@ class App extends Component {
                     movies: []
                 });
             })
+    }
+
+    flagAsLoaded(id) {
+        const { movies } = this.state
+        const moviesMutated = movies
+        const movieIndex = _.findIndex(movies, movieItem => movieItem.tconst === id)
+        moviesMutated[movieIndex].loaded = true
+        this.setState({
+            movies: moviesMutated
+        })
     }
 
     render() {
@@ -108,10 +118,27 @@ class App extends Component {
                                 /> {movieItem.average_rating}
                                 <div style={{
                                     width: '100%',
+                                    height: !movieItem.loaded ? '400px' : _.noop(),
+                                    background: !movieItem.loaded ? '#e8e8e8' : _.noop(),
+                                    paddingTop: !movieItem.loaded ? '180px' : _.noop(),
                                     textAlign: 'center',
                                     marginBottom: '8px',
                                 }}>
-                                    <img src={movieItem.cover || 'https://ipsumimage.appspot.com/300x450'} style={{ maxWidth: '100%' }}/>
+                                    {!movieItem.loaded &&
+                                        <Icon
+                                            type="loading"
+                                            style={{
+                                                fontSize: '24px',
+                                                display: 'inline-block',
+                                                verticalAlign: 'middle'
+                                            }}
+                                        />
+                                    }
+                                    <img
+                                        src={`${apiUrl}/cover?movie_id=${movieItem.tconst}`}
+                                        style={{ maxWidth: '100%', display: movieItem.loaded ? 'block' : 'none'}}
+                                        onLoad={() => this.flagAsLoaded(movieItem.tconst)}
+                                    />
                                 </div>
                                 {!_.isEmpty(movieItem.genres) && _.map(movieItem.genres.split(','), (genreItem, indexGenre) => (
                                     <Tag key={indexGenre}>{genresDictionary[genreItem] || genreItem}</Tag>
