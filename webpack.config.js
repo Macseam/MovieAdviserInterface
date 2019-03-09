@@ -16,7 +16,7 @@ module.exports = {
                 use: ExtractTextPlugin.extract(
                     {
                         fallback: 'style-loader',
-                        use: ['css-loader']
+                        use: ['css-loader?url=false']
                     }
                 )
             },
@@ -27,7 +27,11 @@ module.exports = {
                         loader: "html-loader"
                     }
                 ]
-            }
+            },
+            {
+                test: /\.(png|jpe?g|gif|svg)$/,
+                use: ['file-loader?name=img/[name].[ext]'],
+            },
         ]
     },
     resolve: {
