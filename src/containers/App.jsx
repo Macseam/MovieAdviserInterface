@@ -36,12 +36,12 @@ const genresDictionary = {
     'Western': 'Вестерн',
 }
 const genresParams = {
-    'Comedy,Romance,Family': {title: 'Смешное', icon: 'smile'},
-    'Drama,Romance': {title: 'Грустное', icon: 'frown'},
-    'Mystery,Horror': {title: 'Страшное', icon: 'radar-chart'},
-    'Thriller,Action,Adventure,Sci-Fi,Fantasy': {title: 'Бодрое', icon: 'fire'},
-    'Animation,Family': {title: 'Для детей', icon: 'car'},
-    'Documentary,History': {title: 'Документалки', icon: 'bank'},
+    'Comedy,Romance,Family': {title: 'Смешное', icon: 'comedy'},
+    'Drama,Romance': {title: 'Грустное', icon: 'drama'},
+    'Mystery,Horror': {title: 'Страшное', icon: 'horror'},
+    'Thriller,Action,Adventure,Sci-Fi,Fantasy': {title: 'Бодрое', icon: 'action'},
+    'Animation,Family': {title: 'Для детей', icon: 'for_kids'},
+    'Documentary,History': {title: 'Документалки', icon: 'history'},
 }
 const yearsDictionary = {'old': 'Старое', 'new': 'Новое', 'all': 'Без разницы'}
 const ratingsDictionary = {'low': 'Низкий рейтинг', 'high': 'Высокий рейтинг', 'all': 'Без разницы'}
@@ -62,7 +62,8 @@ class App extends Component {
     }
 
     chooseQueryParam = e => {
-        const value = e.target.name.split('-')
+        const gotName = _.get(e, 'target.name')
+        const value = gotName ? gotName.split('-') : e.split('-')
         this.setState({
             [value[0]]: value[1]
         }, () => {
@@ -149,7 +150,7 @@ class App extends Component {
             return (
                 <div className='main-div'>
                     <h2 className='main-title'>Какое кино интересует?</h2>
-                    {_.map(genresParams, (dictItem, index) => (
+                    {/*_.map(genresParams, (dictItem, index) => (
                         <Button
                             key={index}
                             icon={dictItem.icon}
@@ -161,6 +162,17 @@ class App extends Component {
                         >
                             {dictItem.title}
                         </Button>
+                    ))*/}
+                    {_.map(genresParams, (dictItem, index) => (
+                        <div
+                            className='genre-icon-container'
+                            onClick={() => this.chooseQueryParam(`genre-${index}`)}
+                        >
+                            <div className={`genre-icon icon-${dictItem.icon}`}>
+                                &nbsp;
+                            </div>
+                            {dictItem.title}
+                        </div>
                     ))}
                 </div>
             )
@@ -264,10 +276,40 @@ class App extends Component {
                         return (
                             <Col
                                 key={movieItem.tconst}
-                                xs={{ span: 24 }} sm={{ span: 24 }} lg={{ span: 6, offset: index === 0 ? 3 : 0 }}
+                                xs={{ span: 24 }}
+                                sm={{ span: 8 }}
+                                md={{ span: 6, offset: index === 0 ? 3 : 0 }}
+                                lg={{ span: 4, offset: index === 0 ? 6 : 0 }}
                                 style={{ marginBottom: '20px' }}
                             >
                                 <Card
+                                    size='small'
+                                    cover={
+                                        <div style={{
+                                            width: '100%',
+                                            height: !movieItem.loaded ? '400px' : _.noop(),
+                                            background: !movieItem.loaded ? '#e8e8e8' : _.noop(),
+                                            paddingTop: !movieItem.loaded ? '180px' : _.noop(),
+                                            textAlign: 'center',
+                                            marginBottom: '8px',
+                                        }}>
+                                            {!movieItem.loaded &&
+                                            <Icon
+                                                type="loading"
+                                                style={{
+                                                    fontSize: '24px',
+                                                    display: 'inline-block',
+                                                    verticalAlign: 'middle'
+                                                }}
+                                            />
+                                            }
+                                            <img
+                                                src={`${apiUrl}/cover?movie_id=${movieItem.tconst}`}
+                                                style={{ width: '100%', display: movieItem.loaded ? 'block' : 'none'}}
+                                                onLoad={() => this.flagAsLoaded(movieItem.tconst)}
+                                            />
+                                        </div>
+                                    }
                                     title={<div>
                                         <h3>{movieItem.title || movieItem.primary_title}</h3>
                                         {movieItem.title &&
@@ -287,34 +329,13 @@ class App extends Component {
                                             : movieItem.average_rating}
                                         allowHalf
                                     /> {movieItem.average_rating}
-                                    <div style={{
-                                        width: '100%',
-                                        height: !movieItem.loaded ? '400px' : _.noop(),
-                                        background: !movieItem.loaded ? '#e8e8e8' : _.noop(),
-                                        paddingTop: !movieItem.loaded ? '180px' : _.noop(),
-                                        textAlign: 'center',
-                                        marginBottom: '8px',
-                                    }}>
-                                        {!movieItem.loaded &&
-                                        <Icon
-                                            type="loading"
-                                            style={{
-                                                fontSize: '24px',
-                                                display: 'inline-block',
-                                                verticalAlign: 'middle'
-                                            }}
-                                        />
+                                    <div className='card__bottom'>
+                                        {
+                                            _.map(movieItem.genres.split(','), (genreItem, indexGenre) => (
+                                                <Tag key={indexGenre}>{genresDictionary[genreItem] || genreItem}</Tag>
+                                            ))
                                         }
-                                        <img
-                                            src={`${apiUrl}/cover?movie_id=${movieItem.tconst}`}
-                                            style={{ maxWidth: '100%', display: movieItem.loaded ? 'block' : 'none'}}
-                                            onLoad={() => this.flagAsLoaded(movieItem.tconst)}
-                                        />
                                     </div>
-                                    {!_.isEmpty(movieItem.genres) && _.map(movieItem.genres.split(','), (genreItem, indexGenre) => (
-                                        <Tag key={indexGenre}>{genresDictionary[genreItem] || genreItem}</Tag>
-                                    ))
-                                    }
                                 </Card>
                             </Col>
                         )
