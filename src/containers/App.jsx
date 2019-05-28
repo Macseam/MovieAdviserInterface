@@ -5,7 +5,7 @@ import 'antd/dist/antd.css';
 import _ from 'lodash';
 import moment from 'moment';
 import momentDurationFormatSetup from 'moment-duration-format';
-import { Button, Card, Col, Empty, Icon, message, Rate, Row, Slider, Spin, Tag } from "antd";
+import { Button, Col, Empty, Icon, message, Rate, Row, Slider, Spin, Tag } from "antd";
 import './App.less'
 
 const NODE_ENV = process.env.NODE_ENV || 'production';
@@ -43,8 +43,8 @@ const genresParams = {
     'Animation,Family': {title: 'Для детей', icon: 'for_kids'},
     'Documentary,History': {title: 'Документалки', icon: 'history'},
 }
-const yearsDictionary = {'old': 'Старое', 'new': 'Новое', 'all': 'Без разницы'}
-const ratingsDictionary = {'low': 'Низкий рейтинг', 'high': 'Высокий рейтинг', 'all': 'Без разницы'}
+const yearsDictionary = {'old': 'Старое', 'new': 'Новое', 'all': 'Случайное'}
+const ratingsDictionary = {'low': 'Малоизвестное', 'high': 'Популярное', 'all': 'Случайное'}
 
 momentDurationFormatSetup(moment)
 
@@ -165,6 +165,7 @@ class App extends Component {
                     ))*/}
                     {_.map(genresParams, (dictItem, index) => (
                         <div
+                            key={index}
                             className='genre-icon-container'
                             onClick={() => this.chooseQueryParam(`genre-${index}`)}
                         >
@@ -181,19 +182,21 @@ class App extends Component {
         if (genre && !year) {
             return (
                 <div className='main-div'>
-                    <h2 className='main-title'>Старое, новое?</h2>
-                    <div className='main-div__slider'>
-                        <Slider
-                            marks={{
-                                1960: '1960',
-                                2019: '2019'
-                            }}
-                            min={1960}
-                            max={2019}
-                            defaultValue={2015}
-                            onAfterChange={this.changeYear}
-                        />
-                    </div>
+                    <h2 className='main-title'>Новое или старое?</h2>
+                    {/*
+                        <div className='main-div__slider'>
+                            <Slider
+                                marks={{
+                                    1960: '1960',
+                                    2019: '2019'
+                                }}
+                                min={1960}
+                                max={2019}
+                                defaultValue={2015}
+                                onAfterChange={this.changeYear}
+                            />
+                        </div>
+                    */}
                     {_.map(yearsDictionary, (dictItem, index) => (
                         <Button
                             key={index}
@@ -214,15 +217,18 @@ class App extends Component {
         if (year && !rating) {
             return (
                 <div className='main-div'>
-                    <h2 className='main-title'>Сильно популярное или не очень?</h2>
-                    <div className='main-div__rating'>
-                        <Rate
-                            allowHalf
-                            count={10}
-                            defaultValue={2.5}
-                            onChange={this.changeRating}
-                        />
-                    </div>
+                    <h2 className='main-title'>Популярное или малоизвестное?</h2>
+                    {/*
+                        <div className='main-div__rating'>
+                            <Rate
+                                allowHalf
+                                count={10}
+                                defaultValue={2.5}
+                                onChange={this.changeRating}
+                            />
+                        </div>
+                    */}
+
                     {_.map(ratingsDictionary, (dictItem, index) => (
                         <Button
                             key={index}
@@ -242,8 +248,13 @@ class App extends Component {
 
         return (
             <div className='main-div'>
-                <h2 className='main-title'>{loading ? 'Поиск' : 'Результат поиска'}</h2>
-                <Row gutter={24} style={{ margin: '0' }}>
+                <h2 className='main-title'>
+                    {loading
+                        ? 'Поиск'
+                        : _.capitalize(`Результат поиска (${genresParams[genre].title}, ${ratingsDictionary[rating]}, ${yearsDictionary[year]})`)
+                    }
+                </h2>
+                <Row gutter={24} style={{ margin: '0 auto', width: '80%' }}>
                     {loading &&
                         <Col span={24}>
                             <div style={{
@@ -251,7 +262,12 @@ class App extends Component {
                                 height: '200px',
                                 paddingTop: '100px'
                             }}>
-                                <Spin tip="Загрузка списка фильмов" />
+                                <Spin tip={
+                                    <div>
+                                        <div>Загрузка списка фильмов</div>
+                                        <div>{_.capitalize(`(${genresParams[genre].title}, ${ratingsDictionary[rating]}, ${yearsDictionary[year]})`)}</div>
+                                    </div>
+                                } />
                             </div>
                         </Col>
                     }
@@ -270,83 +286,140 @@ class App extends Component {
                     }
 
                     {!_.isEmpty(movies) && _.map(movies, (movieItem, index) => {
-                        const durationString = moment.duration(parseInt(movieItem.runtime_minutes, 10), "minutes")
-                        const durationHours = durationString._data.hours
-                        const durationMinutes = durationString._data.minutes
-                        return (
-                            <Col
-                                key={movieItem.tconst}
-                                xs={{ span: 24 }}
-                                sm={{ span: 8 }}
-                                md={{ span: 6, offset: index === 0 ? 3 : 0 }}
-                                lg={{ span: 4, offset: index === 0 ? 6 : 0 }}
-                                style={{ marginBottom: '20px' }}
-                            >
-                                <Card
-                                    size='small'
-                                    cover={
+                            const durationString = moment.duration(parseInt(movieItem.runtime_minutes, 10), "minutes")
+                            const durationHours = durationString._data.hours
+                            const durationMinutes = durationString._data.minutes
+                            let ratingColor = '#795548'
+                            if (movieItem.average_rating >= 5 && movieItem.average_rating < 8) {
+                                ratingColor = '#607D8B'
+                            } else if (movieItem.average_rating >= 8) {
+                                ratingColor = '#FF9800'
+                            }
+                            return (
+                                <Col
+                                    key={movieItem.tconst || index}
+                                    xs={{ span: 24 }}
+                                    sm={{ span: 8 }}
+                                    md={{ span: 8 }}
+                                    lg={{ span: 8 }}
+                                    style={{ marginBottom: '20px' }}
+                                >
+                                    <div style={{
+                                        width: '100%',
+                                        padding: '6px 10px',
+                                        fontSize: '12px',
+                                        color: '#ffffff',
+                                        backgroundColor: ratingColor
+                                    }}>
+                                        Рейтинг IMDB: {movieItem.average_rating}
+                                    </div>
+                                    <div className="test-wrapper">
+                                        <div>
+                                            <h3
+                                                title={movieItem.title || movieItem.primary_title}
+                                                style={{
+                                                    marginBottom: '0',
+                                                    whiteSpace: 'nowrap',
+                                                    textOverflow: 'ellipsis',
+                                                    overflow: 'hidden'
+                                                }}
+                                            >
+                                                {movieItem.title || movieItem.primary_title}
+                                                </h3>
+                                            {movieItem.title &&
+                                            <h5
+                                                title={movieItem.primary_title}
+                                                style={{
+                                                    fontSize: '11px',
+                                                    whiteSpace: 'nowrap',
+                                                    textOverflow: 'ellipsis',
+                                                    overflow: 'hidden'
+                                                }}
+                                            >
+                                                {movieItem.primary_title}
+                                            </h5>
+                                            }
+                                        </div>
                                         <div style={{
-                                            width: '100%',
-                                            height: !movieItem.loaded ? '400px' : _.noop(),
-                                            background: !movieItem.loaded ? '#e8e8e8' : _.noop(),
-                                            paddingTop: !movieItem.loaded ? '180px' : _.noop(),
+                                            width: '267px',
+                                            height: '400px',
+                                            verticalAlign: 'middle',
                                             textAlign: 'center',
-                                            marginBottom: '8px',
+                                            margin: '18px auto',
+                                            position: 'relative'
                                         }}>
+                                            <div style={{
+                                                position: 'absolute',
+                                                zIndex: '100',
+                                                top: '5px',
+                                                left: '5px',
+                                                fontSize: '10px',
+                                                padding: '6px 10px',
+                                                background: 'rgba(255,255,255,0.9)',
+                                                borderRadius: '4px'
+                                            }}>
+                                                {movieItem.start_year}
+                                            </div>
+                                            {movieItem.runtime_minutes &&
+                                            <div style={{
+                                                position: 'absolute',
+                                                zIndex: '100',
+                                                top: '5px',
+                                                right: '5px',
+                                                fontSize: '10px',
+                                                padding: '6px 10px',
+                                                background: 'rgba(255,255,255,0.9)',
+                                                borderRadius: '4px'
+                                            }}>
+                                                {durationHours ? `${durationHours} ч ` : ''}{durationMinutes ? `${durationMinutes} мин` : ''}
+                                            </div>
+                                            }
                                             {!movieItem.loaded &&
                                             <Icon
                                                 type="loading"
                                                 style={{
                                                     fontSize: '24px',
                                                     display: 'inline-block',
-                                                    verticalAlign: 'middle'
+                                                    verticalAlign: 'middle',
+                                                    position: 'absolute',
+                                                    top: '50%',
+                                                    transform: 'translateY(-50%)'
                                                 }}
                                             />
                                             }
                                             <img
                                                 src={`${apiUrl}/cover?movie_id=${movieItem.tconst}`}
-                                                style={{ width: '100%', display: movieItem.loaded ? 'block' : 'none'}}
+                                                style={{
+                                                    width: 'auto',
+                                                    height: '100%',
+                                                    display: movieItem.loaded ? 'block' : 'none',
+                                                    position: 'absolute',
+                                                    left: '-100%',
+                                                    right: '-100%',
+                                                    margin: '0 auto'
+                                                }}
                                                 onLoad={() => this.flagAsLoaded(movieItem.tconst)}
                                             />
                                         </div>
-                                    }
-                                    title={<div>
-                                        <h3>{movieItem.title || movieItem.primary_title}</h3>
-                                        {movieItem.title &&
-                                            <h5>{movieItem.primary_title}</h5>
-                                        }
-                                    </div>}
-                                >
-                                    <h5>Год выхода: {movieItem.start_year}</h5>
-                                    {!!(durationHours || durationMinutes) &&
-                                    <h5>Сколько идёт: {durationHours ? `${durationHours} ч ` : ''}{durationMinutes ? `${durationMinutes} мин` : ''}</h5>
-                                    }
-                                    <Rate
-                                        style={{ margin: '10px 0' }}
-                                        disabled
-                                        defaultValue={movieItem.average_rating
-                                            ? parseInt(movieItem.average_rating / 2, 10)
-                                            : movieItem.average_rating}
-                                        allowHalf
-                                    /> {movieItem.average_rating}
-                                    <div className='card__bottom'>
-                                        {
-                                            _.map(movieItem.genres.split(','), (genreItem, indexGenre) => (
-                                                <Tag key={indexGenre}>{genresDictionary[genreItem] || genreItem}</Tag>
-                                            ))
-                                        }
+                                        <div>
+                                            {
+                                                _.map(movieItem.genres.split(','), (genreItem, indexGenre) => (
+                                                    <Tag key={indexGenre} color="#8f8f8f">{genresDictionary[genreItem] || genreItem}</Tag>
+                                                ))
+                                            }
+                                        </div>
                                     </div>
-                                </Card>
-                            </Col>
-                        )
-                    }
+                                </Col>
+                            )
+                        }
                     )}
                 </Row>
+
                 {!_.isEmpty(movies) &&
                     <div style={{ textAlign: 'center', width: '100%', marginTop: '10px' }}>
                         <Button
                             htmlType="button"
-                            type="primary"
+                            ghost
                             onClick={() => this.showAnother()}
                             className='main-div__button'
                         >
@@ -354,7 +427,7 @@ class App extends Component {
                         </Button>
                         <Button
                             htmlType="button"
-                            type="primary"
+                            ghost
                             onClick={() => this.resetQuery()}
                             className='main-div__button'
                         >

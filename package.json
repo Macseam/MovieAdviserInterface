@@ -16,7 +16,7 @@
     "url": "git://github.com/Macseam/MovieAdviserInterface"
   },
   "dependencies": {
-    "antd": "^3.12.4",
+    "antd": "^3.19.1",
     "axios": "^0.18.0",
     "lodash": "^4.17.11",
     "moment": "^2.24.0",
